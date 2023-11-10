@@ -1,7 +1,6 @@
 package com.alcode.service;
 
 import com.alcode.config.BotConfig;
-import com.alcode.user.Role;
 import com.alcode.user.UsersService;
 import com.alcode.user.history.Label;
 import com.alcode.user.history.UserHistoryService;
@@ -24,7 +23,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,6 +33,7 @@ import java.util.UUID;
 @Slf4j
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
+    private static final String GROUP_INVITE_LINK = "https://t.me/+jY83n3T9ES44NGYy";
     private final BotConfig config;
 
     private final UsersService usersService;
@@ -68,8 +67,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+
         if (update.hasMessage()) {
             long chatId = update.getMessage().getChatId();
+            sendMessage(chatId, generateOneTimeGroupJoinLink());
 
             if (update.getMessage().hasText()) {
                 String messageText = update.getMessage().getText();
@@ -164,10 +165,49 @@ public class TelegramBot extends TelegramLongPollingBot {
                         }
 
                     }
-                    else {
+                    else if (mimeType.equals("audio/mp3")) {
+                        Label last = historyService.getLastLabelByChatId(chatId);
+
+                        if (last.equals(Label.PDF_ENTERING)) {
+                            String fileId = document.getFileId();
+                            GetFile getFile = new GetFile(fileId);
+
+                            org.telegram.telegrambots.meta.api.objects.File file = execute(getFile);
+
+                            String originalFilename = file.getFilePath();
+                            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+
+                            String fileUrl = file.getFileUrl(getBotToken());
+                            try {
+                                URL pdfUrl = new URL(fileUrl);
+                                InputStream inputStream = pdfUrl.openStream();
+
+                                Path directoryPath = Path.of("audios");
+                                if (!Files.exists(directoryPath)) {
+                                    Files.createDirectories(directoryPath);
+                                }
+
+                                String fileName = UUID.randomUUID() + extension;
+
+                                Path filePath = directoryPath.resolve(fileName);
+                                Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                                System.out.println("PDF file saved successfully.");
+
+                                historyService.create(Label.PDF_ENTERED, chatId, "audios\\" + fileName);
+                                historyService.create(Label.IMAGE_ENTERING, chatId, "NO_VALUE");
+                                sendMessage(chatId, "Rasm yuboring");
+                            } catch (IOException e) {
+                                System.out.println("Failed to download the PDF file: " + e.getMessage());
+                            }
+                        } else {
+                            sendMessage(chatId, "Kechirasiz, Bunday amal mavjud emas.");
+                        }
+
+                    } else {
                         sendMessage(chatId, "Kechirasiz, Bu pdf emas.");
                     }
-                } catch(TelegramApiException e){
+                } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
             } else if (update.getMessage().hasPhoto()) {
@@ -212,6 +252,47 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                     }
                 }
+            } else if (update.getMessage().hasAudio()) {
+                Audio audio = update.getMessage().getAudio();
+                Label last = historyService.getLastLabelByChatId(chatId);
+                try {
+                    if (last.equals(Label.PDF_ENTERING)) {
+                        String fileId = audio.getFileId();
+                        GetFile getFile = new GetFile(fileId);
+                        org.telegram.telegrambots.meta.api.objects.File file = execute(getFile);
+
+                        String originalFilename = file.getFilePath();
+                        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+
+                        String fileUrl = file.getFileUrl(getBotToken());
+                        try {
+                            URL pdfUrl = new URL(fileUrl);
+                            InputStream inputStream = pdfUrl.openStream();
+
+                            Path directoryPath = Path.of("audios");
+                            if (!Files.exists(directoryPath)) {
+                                Files.createDirectories(directoryPath);
+                            }
+
+                            String fileName = UUID.randomUUID() + extension;
+
+                            Path filePath = directoryPath.resolve(fileName);
+                            Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                            System.out.println("PDF file saved successfully.");
+
+                            historyService.create(Label.PDF_ENTERED, chatId, "audios\\" + fileName);
+                            historyService.create(Label.IMAGE_ENTERING, chatId, "NO_VALUE");
+                            sendMessage(chatId, "Rasm yuboring");
+                        } catch (IOException e) {
+                            System.out.println("Failed to download the PDF file: " + e.getMessage());
+                        }
+                    } else {
+                        sendMessage(chatId, "Kechirasiz, Bunday amal mavjud emas.");
+                    }
+                } catch (TelegramApiException ignored) {
+
+                }
             }
 
 
@@ -230,6 +311,11 @@ public class TelegramBot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private String generateOneTimeGroupJoinLink() {
+        String uniqueLink = UUID.randomUUID().toString();
+        return GROUP_INVITE_LINK + "?start=" + uniqueLink;
     }
 
     private void sendPdf(Long chatId, String name, String pdfUrl, String imageUrl) {
