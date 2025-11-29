@@ -70,7 +70,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         if (update.hasMessage()) {
             long chatId = update.getMessage().getChatId();
-            sendMessage(chatId, generateOneTimeGroupJoinLink());
 
             if (update.getMessage().hasText()) {
                 String messageText = update.getMessage().getText();
@@ -154,7 +153,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                                 System.out.println("PDF file saved successfully.");
 
-                                historyService.create(Label.PDF_ENTERED, chatId, "pdfs\\" + fileName);
+                                historyService.create(Label.PDF_ENTERED, chatId, "pdfs/" + fileName);
                                 historyService.create(Label.IMAGE_ENTERING, chatId, "NO_VALUE");
                                 sendMessage(chatId, "Rasm yuboring");
                             } catch (IOException e) {
@@ -194,7 +193,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                                 System.out.println("PDF file saved successfully.");
 
-                                historyService.create(Label.PDF_ENTERED, chatId, "audios\\" + fileName);
+                                historyService.create(Label.PDF_ENTERED, chatId, "audios/" + fileName);
                                 historyService.create(Label.IMAGE_ENTERING, chatId, "NO_VALUE");
                                 sendMessage(chatId, "Rasm yuboring");
                             } catch (IOException e) {
@@ -243,7 +242,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                             System.out.println("PDF file saved successfully.");
 
-                            historyService.create(Label.IMAGE_ENTERED, chatId, "images\\" + fileName);
+                            historyService.create(Label.IMAGE_ENTERED, chatId, "images/" + fileName);
                             historyService.create(Label.NAME_ENTERING, chatId, "NO_VALUE");
                             sendMessage(chatId, "Text yuboring");
                         } catch (IOException e) {
@@ -281,7 +280,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                             System.out.println("PDF file saved successfully.");
 
-                            historyService.create(Label.PDF_ENTERED, chatId, "audios\\" + fileName);
+                            historyService.create(Label.PDF_ENTERED, chatId, "audios/" + fileName);
                             historyService.create(Label.IMAGE_ENTERING, chatId, "NO_VALUE");
                             sendMessage(chatId, "Rasm yuboring");
                         } catch (IOException e) {
